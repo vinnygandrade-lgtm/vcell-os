@@ -1,0 +1,8 @@
+node_modules
+dist
+dev-dist
+tmp-screens
+*.local
+.DS_Store
+tsconfig.tsbuildinfo
+node_modules/.tmp
