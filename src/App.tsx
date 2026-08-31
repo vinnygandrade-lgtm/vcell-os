@@ -1,5 +1,7 @@
+import { useEffect } from 'react'
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { PhoneFrame } from '@/components/Shell'
+import { initDrive } from '@/lib/drive'
 import { CustomerPage } from '@/pages/CustomerPage'
 import { CustomersPage } from '@/pages/CustomersPage'
 import { HomePage } from '@/pages/HomePage'
@@ -8,6 +10,10 @@ import { OrderPage } from '@/pages/OrderPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 
 export default function App() {
+  useEffect(() => {
+    initDrive()
+  }, [])
+
   return (
     <HashRouter>
       <PhoneFrame>

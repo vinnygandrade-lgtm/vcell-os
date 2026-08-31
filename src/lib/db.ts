@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { Customer, Meta, Order, Photo, ReceivePhotoDraft } from './types'
+import type { Customer, Meta, Order, Photo, ReceivePhotoDraft, Tombstone } from './types'
 
 export const db = new Dexie('vcell-os') as Dexie & {
   customers: EntityTable<Customer, 'id'>
@@ -7,6 +7,7 @@ export const db = new Dexie('vcell-os') as Dexie & {
   photos: EntityTable<Photo, 'id'>
   meta: EntityTable<Meta, 'key'>
   drafts: EntityTable<ReceivePhotoDraft, 'key'>
+  tombstones: EntityTable<Tombstone, 'id'>
 }
 
 db.version(1).stores({
@@ -22,6 +23,10 @@ db.version(2).stores({
 
 db.version(3).stores({
   orders: 'id, number, customerId, status, receivedAt, createdAt, imei, model, location',
+})
+
+db.version(4).stores({
+  tombstones: 'id, kind, deletedAt',
 })
 
 export function uid() {

@@ -1,4 +1,5 @@
 import { db, uid } from './db'
+import { runQuietly, scheduleSync } from './drive'
 import type { Customer, Order, Photo } from './types'
 
 interface BackupFile {
@@ -62,21 +63,24 @@ export async function importBackup(file: File) {
   if (data.version !== 1 || !Array.isArray(data.orders)) {
     throw new Error('Arquivo de backup inválido')
   }
-  await db.transaction('rw', db.customers, db.orders, db.photos, db.meta, async () => {
-    await db.customers.clear()
-    await db.orders.clear()
-    await db.photos.clear()
-    await db.customers.bulkPut(data.customers ?? [])
-    await db.orders.bulkPut(data.orders ?? [])
-    const photos: Photo[] = await Promise.all(
-      (data.photos ?? []).map(async (photo) => ({
-        id: photo.id || uid(),
-        orderId: photo.orderId,
-        createdAt: photo.createdAt,
-        blob: await dataUrlToBlob(photo.dataUrl),
-      })),
-    )
-    if (photos.length) await db.photos.bulkPut(photos)
-    await db.meta.put({ key: 'orderSeq', value: data.orderSeq ?? data.orders.length })
+  await runQuietly(async () => {
+    await db.transaction('rw', db.customers, db.orders, db.photos, db.meta, async () => {
+      await db.customers.clear()
+      await db.orders.clear()
+      await db.photos.clear()
+      await db.customers.bulkPut(data.customers ?? [])
+      await db.orders.bulkPut(data.orders ?? [])
+      const photos: Photo[] = await Promise.all(
+        (data.photos ?? []).map(async (photo) => ({
+          id: photo.id || uid(),
+          orderId: photo.orderId,
+          createdAt: photo.createdAt,
+          blob: await dataUrlToBlob(photo.dataUrl),
+        })),
+      )
+      if (photos.length) await db.photos.bulkPut(photos)
+      await db.meta.put({ key: 'orderSeq', value: data.orderSeq ?? data.orders.length })
+    })
   })
+  scheduleSync()
 }
