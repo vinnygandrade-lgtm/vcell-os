@@ -80,6 +80,7 @@ export function messageVars(customerName: string, order: Order) {
     endereco: shop.address,
     telefone: shop.phoneDisplay,
     valor: formatMoney(order.price) || 'a combinar',
+    local: order.location?.trim() || 'na loja',
   }
 }
 

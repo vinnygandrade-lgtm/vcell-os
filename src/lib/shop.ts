@@ -29,6 +29,15 @@ export const COLORS = [
   'Roxo',
 ] as const
 
+export const LOCATIONS = [
+  'Balcão',
+  'Gaveta 1',
+  'Gaveta 2',
+  'Caixa',
+  'Prateleira',
+  'Saco',
+] as const
+
 export const DEFECTS = [
   'Tela',
   'Bateria',

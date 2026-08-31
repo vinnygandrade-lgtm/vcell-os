@@ -1,15 +1,17 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   ChevronLeft,
   Copy,
+  Maximize2,
   MessageCircle,
   Trash2,
   AlertTriangle,
+  X,
 } from 'lucide-react'
 import { WhatsAppComposer } from '@/components/WhatsAppComposer'
 import { PhotoStrip } from '@/components/PhotoStrip'
-import { StatusBadge } from '@/components/Ui'
+import { LocationPicker, StatusBadge } from '@/components/Ui'
 import { useCustomer, useOrder, usePhotos } from '@/hooks/useStore'
 import { db, explainSaveError, uid } from '@/lib/db'
 import {
@@ -20,6 +22,7 @@ import {
   formatOs,
   formatPhone,
   isOverdue,
+  orderSummary,
   OVERDUE_DAYS,
   timeInShop,
 } from '@/lib/format'
@@ -53,6 +56,13 @@ function OrderDetail({ order }: { order: Order }) {
   const photos = usePhotos(order.id)
   const [photoError, setPhotoError] = useState('')
   const [composer, setComposer] = useState<{ kind: MessageKind; text: string } | null>(null)
+  const [ticketOpen, setTicketOpen] = useState(false)
+  const [copied, setCopied] = useState('')
+  const [locEdit, setLocEdit] = useState(order.location ?? '')
+
+  useEffect(() => {
+    setLocEdit(order.location ?? '')
+  }, [order.id])
 
   async function setStatus(status: OrderStatus) {
     const now = Date.now()
@@ -62,6 +72,11 @@ function OrderDetail({ order }: { order: Order }) {
       readyAt: status === 'ready' || status === 'delivered' ? order.readyAt ?? now : order.readyAt,
       deliveredAt: status === 'delivered' ? now : null,
     })
+  }
+
+  async function setLocation(location: string) {
+    setLocEdit(location)
+    await db.orders.update(order.id, { location, updatedAt: Date.now() })
   }
 
   async function addPhotos(files: FileList) {
@@ -89,9 +104,30 @@ function OrderDetail({ order }: { order: Order }) {
     navigate('/')
   }
 
+  async function copyText(label: string, text: string) {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(label)
+      window.setTimeout(() => setCopied(''), 2000)
+    } catch {
+      setCopied('')
+    }
+  }
+
+  function stampWarn(kind: MessageKind) {
+    const now = Date.now()
+    if (kind === 'pickup') {
+      void db.orders.update(order.id, { pickupWarnedAt: now, updatedAt: now })
+    }
+    if (kind === 'sale') {
+      void db.orders.update(order.id, { saleWarnedAt: now, updatedAt: now })
+    }
+  }
+
   const overdue = isOverdue(order)
   const days = daysInShop(order.receivedAt)
   const customerName = customer?.name ?? 'cliente'
+  const location = order.location?.trim() ?? ''
 
   function openMessage(kind: MessageKind) {
     setComposer({ kind, text: buildMessage(kind, customerName, order) })
@@ -112,7 +148,9 @@ function OrderDetail({ order }: { order: Order }) {
           <p className="font-display text-2xl leading-none tracking-wide text-red">
             {formatOs(order.number)}
           </p>
-          <p className="truncate text-xs text-mute">{deviceLabel(order)}</p>
+          <p className="truncate text-xs text-mute">
+            {location ? `${location} · ${deviceLabel(order)}` : deviceLabel(order)}
+          </p>
         </div>
         <StatusBadge status={order.status} />
       </header>
@@ -127,6 +165,16 @@ function OrderDetail({ order }: { order: Order }) {
                 <p className="mt-1 text-sm text-white/80">
                   Passou de {OVERDUE_DAYS} dias. Avise para retirar ou mande o aviso de venda.
                 </p>
+                {order.pickupWarnedAt && (
+                  <p className="mt-1 text-xs text-white/70">
+                    Retirada avisada em {formatDateTime(order.pickupWarnedAt)}
+                  </p>
+                )}
+                {order.saleWarnedAt && (
+                  <p className="mt-1 text-xs text-white/70">
+                    Venda avisada em {formatDateTime(order.saleWarnedAt)}
+                  </p>
+                )}
               </div>
             </div>
             {customer?.phone ? (
@@ -156,7 +204,12 @@ function OrderDetail({ order }: { order: Order }) {
             Número para achar o aparelho
           </p>
           <p className="mt-1 font-display text-5xl tracking-wide">{formatOs(order.number)}</p>
-          <p className="mt-2 text-sm text-blue-100/80">
+          {location ? (
+            <p className="mt-2 text-lg font-semibold text-blue-100">Onde: {location}</p>
+          ) : (
+            <p className="mt-2 text-sm text-amber-200/90">Ainda não marcou onde está o celular.</p>
+          )}
+          <p className="mt-1 text-sm text-blue-100/80">
             {order.status === 'delivered'
               ? `Ficou ${timeInShop(order.receivedAt, order.deliveredAt ?? Date.now())} na loja`
               : `Na loja há ${timeInShop(order.receivedAt)}`}
@@ -164,10 +217,17 @@ function OrderDetail({ order }: { order: Order }) {
           <div className="mt-4 grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() => navigator.clipboard.writeText(formatOs(order.number))}
+              onClick={() => void copyText('OS copiada', formatOs(order.number))}
               className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-white/10 text-sm font-semibold"
             >
               <Copy size={16} /> Copiar OS
+            </button>
+            <button
+              type="button"
+              onClick={() => setTicketOpen(true)}
+              className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-white/10 text-sm font-semibold"
+            >
+              <Maximize2 size={16} /> Cartão
             </button>
             {customer?.phone ? (
               <button
@@ -177,16 +237,24 @@ function OrderDetail({ order }: { order: Order }) {
                     overdue ? 'pickup' : order.status === 'ready' ? 'ready' : 'received',
                   )
                 }
-                className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-emerald-500/20 text-sm font-semibold text-emerald-200"
+                className="col-span-2 flex h-11 items-center justify-center gap-2 rounded-2xl bg-emerald-500/20 text-sm font-semibold text-emerald-200"
               >
                 <MessageCircle size={16} /> WhatsApp
               </button>
             ) : (
-              <span className="flex h-11 items-center justify-center rounded-2xl bg-white/5 text-sm text-mute">
+              <span className="col-span-2 flex h-11 items-center justify-center rounded-2xl bg-white/5 text-sm text-mute">
                 Sem telefone
               </span>
             )}
+            <button
+              type="button"
+              onClick={() => void copyText('Resumo copiado', orderSummary(order, customerName))}
+              className="col-span-2 flex h-11 items-center justify-center gap-2 rounded-2xl bg-white/10 text-sm font-semibold"
+            >
+              <Copy size={16} /> Copiar resumo
+            </button>
           </div>
+          {copied && <p className="mt-2 text-center text-xs text-emerald-300">{copied}</p>}
         </section>
 
         {customer?.phone && (
@@ -245,6 +313,13 @@ function OrderDetail({ order }: { order: Order }) {
         </section>
 
         <section className="mt-4 rounded-3xl bg-panel p-4 ring-1 ring-line">
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-mute">
+            Onde está
+          </p>
+          <LocationPicker value={locEdit} onChange={(value) => void setLocation(value)} />
+        </section>
+
+        <section className="mt-4 rounded-3xl bg-panel p-4 ring-1 ring-line">
           {customer && (
             <Link to={`/clientes/${customer.id}`} className="block">
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-mute">Cliente</p>
@@ -289,6 +364,18 @@ function OrderDetail({ order }: { order: Order }) {
                 <p className="text-mute">{formatDateTime(order.readyAt)}</p>
               </li>
             )}
+            {order.pickupWarnedAt && (
+              <li>
+                <p className="font-medium">Aviso de retirada enviado</p>
+                <p className="text-mute">{formatDateTime(order.pickupWarnedAt)}</p>
+              </li>
+            )}
+            {order.saleWarnedAt && (
+              <li>
+                <p className="font-medium">Aviso de venda enviado</p>
+                <p className="text-mute">{formatDateTime(order.saleWarnedAt)}</p>
+              </li>
+            )}
             {order.deliveredAt && (
               <li>
                 <p className="font-medium">Entregue ao cliente</p>
@@ -306,6 +393,15 @@ function OrderDetail({ order }: { order: Order }) {
           <Trash2 size={16} /> Apagar esta OS
         </button>
       </div>
+      {ticketOpen && (
+        <FindTicket
+          order={order}
+          customerName={customerName}
+          copied={copied}
+          onClose={() => setTicketOpen(false)}
+          onCopy={() => void copyText('Resumo copiado', orderSummary(order, customerName))}
+        />
+      )}
       {composer && customer?.phone && (
         <WhatsAppComposer
           title={MESSAGE_LABEL[composer.kind]}
@@ -313,8 +409,60 @@ function OrderDetail({ order }: { order: Order }) {
           text={composer.text}
           onChange={(text) => setComposer({ ...composer, text })}
           onClose={() => setComposer(null)}
+          onSend={() => stampWarn(composer.kind)}
         />
       )}
+    </div>
+  )
+}
+
+function FindTicket({
+  order,
+  customerName,
+  copied,
+  onClose,
+  onCopy,
+}: {
+  order: Order
+  customerName: string
+  copied: string
+  onClose: () => void
+  onCopy: () => void
+}) {
+  const location = order.location?.trim()
+  return (
+    <div className="fixed inset-x-0 top-0 z-50 mx-auto flex min-h-dvh w-full max-w-[430px] flex-col bg-ink px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))]">
+      <div className="flex items-center justify-between py-2">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-mute">Cartão de busca</p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-raised"
+          aria-label="Fechar"
+        >
+          <X size={18} />
+        </button>
+      </div>
+      <div className="flex flex-1 flex-col items-center justify-center text-center">
+        <p className="font-display text-7xl leading-none tracking-wide text-red">{formatOs(order.number)}</p>
+        <p className="mt-6 font-display text-4xl leading-tight tracking-wide">
+          {location || 'Local não marcado'}
+        </p>
+        <p className="mt-4 text-xl font-semibold">{deviceLabel(order) || 'Aparelho'}</p>
+        <p className="mt-1 text-lg text-mute">{customerName}</p>
+        {order.unlock?.trim() ? (
+          <p className="mt-6 rounded-2xl bg-raised px-4 py-3 font-mono text-lg ring-1 ring-line">
+            Senha: {order.unlock}
+          </p>
+        ) : null}
+      </div>
+      <button
+        type="button"
+        onClick={onCopy}
+        className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-raised font-semibold ring-1 ring-line"
+      >
+        <Copy size={16} /> {copied || 'Copiar resumo'}
+      </button>
     </div>
   )
 }

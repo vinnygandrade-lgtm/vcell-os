@@ -20,6 +20,10 @@ db.version(2).stores({
   drafts: 'key',
 })
 
+db.version(3).stores({
+  orders: 'id, number, customerId, status, receivedAt, createdAt, imei, model, location',
+})
+
 export function uid() {
   try {
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {

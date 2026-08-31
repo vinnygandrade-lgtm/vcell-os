@@ -86,7 +86,7 @@ export function SettingsPage() {
           </p>
           <p className="mt-2 text-sm leading-relaxed text-mute">
             Texto padrão do WhatsApp. Use {'{nome}'}, {'{aparelho}'}, {'{os}'}, {'{dias}'}, {'{loja}'},{' '}
-            {'{endereco}'}, {'{telefone}'} e {'{valor}'}.
+            {'{endereco}'}, {'{telefone}'}, {'{valor}'} e {'{local}'}.
           </p>
           <textarea
             value={saleText}

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { LOCATIONS } from '@/lib/shop'
 import { STATUS_LABEL, type OrderStatus } from '@/lib/types'
 import { statusTone } from '@/lib/format'
 
@@ -57,3 +58,33 @@ export const inputClass =
   'w-full rounded-2xl border-0 bg-raised px-4 py-3.5 text-[16px] text-paper outline-none ring-1 ring-line placeholder:text-mute/70 focus:ring-2 focus:ring-red/70'
 
 export const areaClass = `${inputClass} min-h-24 resize-none`
+
+export function LocationPicker({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <div>
+      <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
+        {LOCATIONS.map((item) => (
+          <Chip
+            key={item}
+            label={item}
+            active={value === item}
+            onClick={() => onChange(value === item ? '' : item)}
+          />
+        ))}
+      </div>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Ou escreva: Gaveta 3, saco do fundo…"
+        className={`${inputClass} mt-3`}
+        autoCapitalize="sentences"
+      />
+    </div>
+  )
+}

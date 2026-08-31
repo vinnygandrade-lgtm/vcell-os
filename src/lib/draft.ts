@@ -15,6 +15,7 @@ export interface ReceiveDraftText {
   notes: string
   price: string
   more: boolean
+  location: string
 }
 
 export function emptyDraft(): ReceiveDraftText {
@@ -30,6 +31,7 @@ export function emptyDraft(): ReceiveDraftText {
     notes: '',
     price: '',
     more: false,
+    location: '',
   }
 }
 

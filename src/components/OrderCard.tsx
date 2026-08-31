@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom'
-import { Camera } from 'lucide-react'
+import { Camera, MapPin } from 'lucide-react'
 import { StatusBadge } from '@/components/Ui'
 import { useObjectUrl } from '@/hooks/useStore'
 import {
   daysInShop,
+  daysUntilOverdue,
   deviceLabel,
   formatOs,
   isOverdue,
@@ -28,6 +29,7 @@ export function OrderCard({
   const tone = urgency(order)
   const waitColor =
     tone === 'late' ? 'text-red-hot' : tone === 'warn' ? 'text-amber-300' : 'text-mute'
+  const location = order.location?.trim()
 
   return (
     <Link
@@ -59,13 +61,18 @@ export function OrderCard({
         </div>
         <p className="mt-1.5 truncate font-semibold">{customer?.name ?? 'Cliente'}</p>
         <p className="truncate text-sm text-mute">{deviceLabel(order) || 'Aparelho sem modelo'}</p>
+        {location && (
+          <p className="mt-0.5 flex items-center gap-1 truncate text-xs font-semibold text-blue-200">
+            <MapPin size={12} className="shrink-0" /> {location}
+          </p>
+        )}
         <p className={`mt-1 text-xs font-medium ${waitColor}`}>
           {order.status === 'delivered'
             ? `Entregue · ${timeInShop(order.receivedAt, order.deliveredAt ?? Date.now())} na loja`
             : overdue
               ? `Parado há ${days} dias — ligar para o cliente`
               : days >= 30
-                ? `Há ${timeInShop(order.receivedAt)} na loja`
+                ? `Há ${timeInShop(order.receivedAt)} · faltam ${daysUntilOverdue(order)} dias p/ 60`
                 : `Na loja há ${timeInShop(order.receivedAt)}`}
         </p>
       </div>

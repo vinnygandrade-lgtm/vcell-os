@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Check, ChevronLeft } from 'lucide-react'
-import { Chip, Field, inputClass, areaClass } from '@/components/Ui'
+import { Chip, Field, LocationPicker, inputClass, areaClass } from '@/components/Ui'
 import { PhotoStrip } from '@/components/PhotoStrip'
 import { useCustomers } from '@/hooks/useStore'
 import { db, explainSaveError, uid } from '@/lib/db'
@@ -35,11 +35,13 @@ export function NewOrderPage() {
   const [notes, setNotes] = useState(seed?.notes ?? '')
   const [price, setPrice] = useState(seed?.price ?? '')
   const [more, setMore] = useState(seed?.more ?? false)
+  const [location, setLocation] = useState(seed?.location ?? '')
   const [photos, setPhotos] = useState<Blob[]>([])
   const [photosReady, setPhotosReady] = useState(false)
   const [saving, setSaving] = useState(false)
   const [savedNumber, setSavedNumber] = useState<number>()
   const [savedId, setSavedId] = useState<string>()
+  const [savedLocation, setSavedLocation] = useState('')
   const [error, setError] = useState('')
   const [errorField, setErrorField] = useState<ErrorField>('')
   const [photosFailed, setPhotosFailed] = useState(false)
@@ -74,12 +76,13 @@ export function NewOrderPage() {
       notes,
       price,
       more,
+      location,
     }
   }
 
   useEffect(() => {
     saveDraftText(currentTextDraft())
-  }, [phone, name, customerId, brand, model, color, defect, imei, unlock, notes, price, more])
+  }, [phone, name, customerId, brand, model, color, defect, imei, unlock, notes, price, more, location])
 
   useEffect(() => {
     if (!photosReady) return
@@ -98,7 +101,7 @@ export function NewOrderPage() {
       window.removeEventListener('pagehide', onHide)
       document.removeEventListener('visibilitychange', onHide)
     }
-  }, [phone, name, customerId, brand, model, color, defect, imei, unlock, notes, price, more])
+  }, [phone, name, customerId, brand, model, color, defect, imei, unlock, notes, price, more, location])
 
   async function persistDraft() {
     saveDraftText(currentTextDraft())
@@ -217,6 +220,9 @@ export function NewOrderPage() {
           defect: defect.trim(),
           notes: notes.trim(),
           price: parsedPrice !== null && Number.isFinite(parsedPrice) ? parsedPrice : null,
+          location: location.trim(),
+          pickupWarnedAt: null,
+          saleWarnedAt: null,
           status: 'received',
           receivedAt: now,
           readyAt: null,
@@ -243,6 +249,7 @@ export function NewOrderPage() {
       }
       setSavedNumber(number.next)
       setSavedId(number.orderId)
+      setSavedLocation(location.trim())
       await clearReceiveDraft()
     } catch (err) {
       showError(explainSaveError(err))
@@ -263,6 +270,11 @@ export function NewOrderPage() {
           <p className="mt-3 max-w-xs text-sm text-mute">
             Escreva este número na etiqueta ou na capa. Depois é só buscar por ele.
           </p>
+          {savedLocation && (
+            <p className="mt-3 rounded-2xl bg-navy px-4 py-2 text-sm font-medium text-blue-100">
+              Guardar em: {savedLocation}
+            </p>
+          )}
           {photosFailed && (
             <p className="mt-3 rounded-2xl bg-amber-500/15 px-3 py-2 text-sm text-amber-200">
               A OS foi salva, mas as fotos não couberam neste celular. Abra a ordem e tire as fotos de novo.
@@ -388,6 +400,16 @@ export function NewOrderPage() {
             ))}
           </div>
         </div>
+
+        <section className="rounded-3xl bg-panel p-4 ring-1 ring-line">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-mute">
+            Onde vai ficar
+          </p>
+          <LocationPicker value={location} onChange={setLocation} />
+          <p className="mt-2 text-xs leading-relaxed text-mute">
+            Marca a gaveta, a caixa ou o saco. Na hora de achar, o cartão da OS mostra isso bem grande.
+          </p>
+        </section>
 
         <section className="rounded-3xl bg-panel p-4 ring-1 ring-line">
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-mute">Fotos do celular</p>

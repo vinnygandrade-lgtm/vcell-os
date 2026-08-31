@@ -20,6 +20,9 @@ export interface Order {
   defect: string
   notes: string
   price: number | null
+  location: string
+  pickupWarnedAt: number | null
+  saleWarnedAt: number | null
   status: OrderStatus
   receivedAt: number
   readyAt: number | null

@@ -1,18 +1,19 @@
 import { Link } from 'react-router-dom'
-import { AlertTriangle, Search, Settings, Smartphone, Users } from 'lucide-react'
+import { AlertTriangle, Clock, Search, Settings, Smartphone, Users } from 'lucide-react'
 import { BrandMark } from '@/components/Shell'
 import { InstallBanner } from '@/components/InstallBanner'
 import { OrderCard } from '@/components/OrderCard'
 import { useCustomerMap, useFirstPhotos, useOrders } from '@/hooks/useStore'
-import { isOverdue, matchesQuery, OVERDUE_DAYS } from '@/lib/format'
+import { isDueSoon, isOverdue, matchesQuery, OVERDUE_DAYS } from '@/lib/format'
 import { useMemo, useState } from 'react'
 import type { Order } from '@/lib/types'
 
-type Filter = 'shop' | 'ready' | 'overdue' | 'delivered' | 'all'
+type Filter = 'shop' | 'ready' | 'soon' | 'overdue' | 'delivered' | 'all'
 
 const FILTERS: { id: Filter; label: string }[] = [
   { id: 'shop', label: 'Na loja' },
   { id: 'ready', label: 'Prontos' },
+  { id: 'soon', label: 'Quase 60' },
   { id: 'overdue', label: '+60 dias' },
   { id: 'delivered', label: 'Entregues' },
   { id: 'all', label: 'Todos' },
@@ -21,6 +22,7 @@ const FILTERS: { id: Filter; label: string }[] = [
 function matchesFilter(order: Order, filter: Filter) {
   if (filter === 'all') return true
   if (filter === 'overdue') return isOverdue(order)
+  if (filter === 'soon') return isDueSoon(order)
   if (filter === 'shop') return order.status === 'received' || order.status === 'repairing'
   if (filter === 'ready') return order.status === 'ready'
   return order.status === 'delivered'
@@ -29,9 +31,14 @@ function matchesFilter(order: Order, filter: Filter) {
 function sortOrders(a: Order, b: Order) {
   const aLate = isOverdue(a)
   const bLate = isOverdue(b)
+  if (aLate && !bLate) return -1
+  if (bLate && !aLate) return 1
   if (aLate && bLate) return a.receivedAt - b.receivedAt
-  if (aLate) return -1
-  if (bLate) return 1
+  const aSoon = isDueSoon(a)
+  const bSoon = isDueSoon(b)
+  if (aSoon && !bSoon) return -1
+  if (bSoon && !aSoon) return 1
+  if (aSoon && bSoon) return a.receivedAt - b.receivedAt
   return b.receivedAt - a.receivedAt
 }
 
@@ -53,6 +60,7 @@ export function HomePage() {
   const inShop = orders.filter((o) => o.status === 'received' || o.status === 'repairing').length
   const ready = orders.filter((o) => o.status === 'ready').length
   const overdue = orders.filter(isOverdue)
+  const soon = orders.filter(isDueSoon)
 
   return (
     <div className="flex min-h-dvh flex-col pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
@@ -81,7 +89,7 @@ export function HomePage() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Nome, WhatsApp, IMEI ou OS"
+            placeholder="Nome, WhatsApp, IMEI, OS ou local"
             className="w-full rounded-2xl bg-raised py-3.5 pl-11 pr-4 text-[16px] outline-none ring-1 ring-line focus:ring-2 focus:ring-red/70"
             enterKeyHint="search"
           />
@@ -97,12 +105,15 @@ export function HomePage() {
                   ? 'bg-red text-white'
                   : item.id === 'overdue' && overdue.length > 0
                     ? 'bg-red/15 text-red-hot ring-1 ring-red/40'
-                    : 'bg-raised text-mute ring-1 ring-line'
+                    : item.id === 'soon' && soon.length > 0
+                      ? 'bg-amber-500/15 text-amber-200 ring-1 ring-amber-400/40'
+                      : 'bg-raised text-mute ring-1 ring-line'
               }`}
             >
               {item.label}
               {item.id === 'shop' && inShop > 0 ? ` · ${inShop}` : ''}
               {item.id === 'ready' && ready > 0 ? ` · ${ready}` : ''}
+              {item.id === 'soon' && soon.length > 0 ? ` · ${soon.length}` : ''}
               {item.id === 'overdue' && overdue.length > 0 ? ` · ${overdue.length}` : ''}
             </button>
           ))}
@@ -130,8 +141,32 @@ export function HomePage() {
             </span>
           </button>
         )}
+        {soon.length > 0 && filter !== 'soon' && filter !== 'overdue' && !query.trim() && (
+          <button
+            type="button"
+            onClick={() => setFilter('soon')}
+            className="flex items-start gap-3 rounded-3xl bg-amber-500/15 px-4 py-3.5 text-left ring-1 ring-amber-400/40"
+          >
+            <Clock size={20} className="mt-0.5 shrink-0 text-amber-200" />
+            <span>
+              <span className="block font-semibold text-amber-100">
+                {soon.length === 1
+                  ? '1 celular está perto dos 60 dias'
+                  : `${soon.length} celulares estão perto dos 60 dias`}
+              </span>
+              <span className="mt-0.5 block text-sm text-amber-200/80">
+                Avisa agora, antes de virar briga
+              </span>
+            </span>
+          </button>
+        )}
         {visible.length === 0 ? (
-          <EmptyState hasQuery={Boolean(query.trim())} inShop={inShop} overdue={filter === 'overdue'} />
+          <EmptyState
+            hasQuery={Boolean(query.trim())}
+            inShop={inShop}
+            overdue={filter === 'overdue'}
+            soon={filter === 'soon'}
+          />
         ) : (
           visible.map((order) => (
             <OrderCard
@@ -160,10 +195,12 @@ function EmptyState({
   hasQuery,
   inShop,
   overdue,
+  soon,
 }: {
   hasQuery: boolean
   inShop: number
   overdue: boolean
+  soon: boolean
 }) {
   return (
     <div className="mt-8 rounded-3xl bg-panel px-6 py-10 text-center ring-1 ring-line">
@@ -175,16 +212,20 @@ function EmptyState({
           ? 'Nada encontrado'
           : overdue
             ? 'Nenhum celular com mais de 60 dias'
-            : inShop === 0
-              ? 'Nenhum celular na loja'
-              : 'Nada neste filtro'}
+            : soon
+              ? 'Nenhum celular perto dos 60 dias'
+              : inShop === 0
+                ? 'Nenhum celular na loja'
+                : 'Nada neste filtro'}
       </p>
       <p className="mt-2 text-sm text-mute">
         {hasQuery
-          ? 'Tente nome, telefone, modelo ou número da OS.'
+          ? 'Tente nome, telefone, modelo, local ou número da OS.'
           : overdue
             ? 'Quando um aparelho passar de 60 dias, o alerta aparece aqui.'
-            : 'Toque em Receber aparelho quando o cliente deixar o celular.'}
+            : soon
+              ? 'Dos 30 aos 59 dias na loja, o aviso aparece aqui para ligar antes.'
+              : 'Toque em Receber aparelho quando o cliente deixar o celular.'}
       </p>
     </div>
   )

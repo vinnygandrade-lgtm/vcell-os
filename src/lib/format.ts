@@ -103,6 +103,7 @@ export function matchesQuery(
       order.imei,
       order.defect,
       order.notes,
+      order.location ?? '',
     ].join(' '),
   )
   return q.split(/\s+/).every((part) => hay.includes(part) || customerPhone.includes(onlyDigits(part)))
@@ -144,6 +145,28 @@ export function receivedMessage(customerName: string, order: Order) {
     order.defect ? `Defeito: ${order.defect}` : '',
     shop.address,
     shop.phoneDisplay,
+  ]
+    .filter(Boolean)
+    .join('\n')
+}
+
+export function isDueSoon(order: Order) {
+  if (order.status === 'delivered' || isOverdue(order)) return false
+  return daysInShop(order.receivedAt) >= 30
+}
+
+export function daysUntilOverdue(order: Order) {
+  return Math.max(0, OVERDUE_DAYS - daysInShop(order.receivedAt))
+}
+
+export function orderSummary(order: Order, customerName: string) {
+  return [
+    formatOs(order.number),
+    customerName,
+    deviceLabel(order),
+    order.location ? `Local: ${order.location}` : '',
+    order.unlock ? `Senha: ${order.unlock}` : '',
+    order.status === 'delivered' ? 'Entregue' : `Na loja há ${timeInShop(order.receivedAt)}`,
   ]
     .filter(Boolean)
     .join('\n')
