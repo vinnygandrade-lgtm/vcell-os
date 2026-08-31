@@ -7,6 +7,7 @@ import {
   Trash2,
   AlertTriangle,
 } from 'lucide-react'
+import { WhatsAppComposer } from '@/components/WhatsAppComposer'
 import { PhotoStrip } from '@/components/PhotoStrip'
 import { StatusBadge } from '@/components/Ui'
 import { useCustomer, useOrder, usePhotos } from '@/hooks/useStore'
@@ -19,13 +20,14 @@ import {
   formatOs,
   formatPhone,
   isOverdue,
-  overdueMessage,
   OVERDUE_DAYS,
-  readyMessage,
-  receivedMessage,
   timeInShop,
-  whatsappLink,
 } from '@/lib/format'
+import {
+  buildMessage,
+  MESSAGE_LABEL,
+  type MessageKind,
+} from '@/lib/messages'
 import { compressImage } from '@/lib/photos'
 import { STATUS_LABEL, STATUS_ORDER, type Order, type OrderStatus } from '@/lib/types'
 
@@ -50,6 +52,7 @@ function OrderDetail({ order }: { order: Order }) {
   const customer = useCustomer(order.customerId)
   const photos = usePhotos(order.id)
   const [photoError, setPhotoError] = useState('')
+  const [composer, setComposer] = useState<{ kind: MessageKind; text: string } | null>(null)
 
   async function setStatus(status: OrderStatus) {
     const now = Date.now()
@@ -88,11 +91,11 @@ function OrderDetail({ order }: { order: Order }) {
 
   const overdue = isOverdue(order)
   const days = daysInShop(order.receivedAt)
-  const waText = overdue
-    ? overdueMessage(customer?.name ?? 'cliente', order)
-    : order.status === 'ready' || order.status === 'delivered'
-      ? readyMessage(customer?.name ?? 'cliente', order)
-      : receivedMessage(customer?.name ?? 'cliente', order)
+  const customerName = customer?.name ?? 'cliente'
+
+  function openMessage(kind: MessageKind) {
+    setComposer({ kind, text: buildMessage(kind, customerName, order) })
+  }
 
   return (
     <div className="min-h-dvh pb-10">
@@ -122,19 +125,29 @@ function OrderDetail({ order }: { order: Order }) {
               <div className="min-w-0">
                 <p className="font-semibold">Parado na loja há {days} dias</p>
                 <p className="mt-1 text-sm text-white/80">
-                  Passou de {OVERDUE_DAYS} dias. Avise o cliente para retirar ou decidir o que fazer.
+                  Passou de {OVERDUE_DAYS} dias. Avise para retirar ou mande o aviso de venda.
                 </p>
               </div>
             </div>
-            {customer?.phone && (
-              <a
-                href={whatsappLink(customer.phone, waText)}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-3 flex h-11 items-center justify-center gap-2 rounded-2xl bg-white font-semibold text-red"
-              >
-                <MessageCircle size={16} /> Avisar no WhatsApp
-              </a>
+            {customer?.phone ? (
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => openMessage('pickup')}
+                  className="flex h-11 items-center justify-center rounded-2xl bg-white px-2 text-center text-sm font-semibold text-red"
+                >
+                  Avisar retirada
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openMessage('sale')}
+                  className="flex h-11 items-center justify-center rounded-2xl bg-black/25 px-2 text-center text-sm font-semibold text-white ring-1 ring-white/30"
+                >
+                  Aviso de venda
+                </button>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-white/80">Cadastre o WhatsApp do cliente para avisar.</p>
             )}
           </section>
         )}
@@ -157,14 +170,17 @@ function OrderDetail({ order }: { order: Order }) {
               <Copy size={16} /> Copiar OS
             </button>
             {customer?.phone ? (
-              <a
-                href={whatsappLink(customer.phone, waText)}
-                target="_blank"
-                rel="noreferrer"
+              <button
+                type="button"
+                onClick={() =>
+                  openMessage(
+                    overdue ? 'pickup' : order.status === 'ready' ? 'ready' : 'received',
+                  )
+                }
                 className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-emerald-500/20 text-sm font-semibold text-emerald-200"
               >
                 <MessageCircle size={16} /> WhatsApp
-              </a>
+              </button>
             ) : (
               <span className="flex h-11 items-center justify-center rounded-2xl bg-white/5 text-sm text-mute">
                 Sem telefone
@@ -172,6 +188,35 @@ function OrderDetail({ order }: { order: Order }) {
             )}
           </div>
         </section>
+
+        {customer?.phone && (
+          <section className="mt-4 rounded-3xl bg-panel p-4 ring-1 ring-line">
+            <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-mute">
+              Mensagens no WhatsApp
+            </p>
+            <div className="grid gap-2">
+              {(overdue
+                ? (['pickup', 'sale', 'ready'] as const)
+                : order.status === 'ready'
+                  ? (['ready', 'received'] as const)
+                  : (['received', 'ready'] as const)
+              ).map((kind) => (
+                <button
+                  key={kind}
+                  type="button"
+                  onClick={() => openMessage(kind)}
+                  className={`flex h-12 items-center justify-center rounded-2xl text-sm font-semibold ${
+                    kind === 'sale'
+                      ? 'bg-red text-white'
+                      : 'bg-raised ring-1 ring-line'
+                  }`}
+                >
+                  {MESSAGE_LABEL[kind]}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="mt-4 rounded-3xl bg-panel p-4 ring-1 ring-line">
           <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-mute">Andamento</p>
@@ -261,6 +306,15 @@ function OrderDetail({ order }: { order: Order }) {
           <Trash2 size={16} /> Apagar esta OS
         </button>
       </div>
+      {composer && customer?.phone && (
+        <WhatsAppComposer
+          title={MESSAGE_LABEL[composer.kind]}
+          phone={customer.phone}
+          text={composer.text}
+          onChange={(text) => setComposer({ ...composer, text })}
+          onClose={() => setComposer(null)}
+        />
+      )}
     </div>
   )
 }

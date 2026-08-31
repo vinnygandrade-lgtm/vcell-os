@@ -2,14 +2,30 @@ import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, Download, MapPin, Phone, Upload } from 'lucide-react'
 import { BrandMark } from '@/components/Shell'
+import { areaClass } from '@/components/Ui'
 import { exportBackup, importBackup } from '@/lib/backup'
+import {
+  DEFAULT_TEMPLATES,
+  getTemplate,
+  resetTemplate,
+  saveTemplate,
+  type MessageKind,
+} from '@/lib/messages'
 import { shop } from '@/lib/shop'
 
 export function SettingsPage() {
   const navigate = useNavigate()
   const fileRef = useRef<HTMLInputElement>(null)
   const [message, setMessage] = useState('')
+  const [saleText, setSaleText] = useState(() => getTemplate('sale'))
+  const [pickupText, setPickupText] = useState(() => getTemplate('pickup'))
+  const [savedKind, setSavedKind] = useState('')
   const [busy, setBusy] = useState(false)
+
+  function saveKind(kind: MessageKind, text: string) {
+    saveTemplate(kind, text)
+    setSavedKind(kind)
+  }
 
   async function restore(file: File) {
     setBusy(true)
@@ -60,8 +76,80 @@ export function SettingsPage() {
             guarda os dados neste aparelho.
           </p>
           <p className="mt-3 break-all rounded-2xl bg-raised px-3 py-2 font-mono text-xs text-blue-200">
-            {typeof window !== 'undefined' ? window.location.origin : ''}
+            {typeof window !== 'undefined' ? window.location.href.split('#')[0] : ''}
           </p>
+        </section>
+
+        <section className="mt-4 rounded-3xl bg-panel p-4 ring-1 ring-line">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-mute">
+            Aviso de venda (60 dias)
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-mute">
+            Texto padrão do WhatsApp. Use {'{nome}'}, {'{aparelho}'}, {'{os}'}, {'{dias}'}, {'{loja}'},{' '}
+            {'{endereco}'}, {'{telefone}'} e {'{valor}'}.
+          </p>
+          <textarea
+            value={saleText}
+            onChange={(e) => setSaleText(e.target.value)}
+            className={`${areaClass} mt-3 min-h-40`}
+          />
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => saveKind('sale', saleText)}
+              className="h-11 rounded-2xl bg-red text-sm font-semibold text-white"
+            >
+              Guardar venda
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                resetTemplate('sale')
+                setSaleText(DEFAULT_TEMPLATES.sale)
+                setSavedKind('')
+              }}
+              className="h-11 rounded-2xl bg-raised text-sm font-semibold ring-1 ring-line"
+            >
+              Restaurar
+            </button>
+          </div>
+          {savedKind === 'sale' && (
+            <p className="mt-2 text-sm text-emerald-300">Aviso de venda guardado.</p>
+          )}
+        </section>
+
+        <section className="mt-4 rounded-3xl bg-panel p-4 ring-1 ring-line">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-mute">
+            Aviso de retirada
+          </p>
+          <textarea
+            value={pickupText}
+            onChange={(e) => setPickupText(e.target.value)}
+            className={`${areaClass} mt-3 min-h-36`}
+          />
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => saveKind('pickup', pickupText)}
+              className="h-11 rounded-2xl bg-red text-sm font-semibold text-white"
+            >
+              Guardar retirada
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                resetTemplate('pickup')
+                setPickupText(DEFAULT_TEMPLATES.pickup)
+                setSavedKind('')
+              }}
+              className="h-11 rounded-2xl bg-raised text-sm font-semibold ring-1 ring-line"
+            >
+              Restaurar
+            </button>
+          </div>
+          {savedKind === 'pickup' && (
+            <p className="mt-2 text-sm text-emerald-300">Aviso de retirada guardado.</p>
+          )}
         </section>
 
         <section className="mt-4 rounded-3xl bg-panel p-4 ring-1 ring-line">

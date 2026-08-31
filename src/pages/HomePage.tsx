@@ -125,7 +125,7 @@ export function HomePage() {
                   : `${overdue.length} celulares passaram de ${OVERDUE_DAYS} dias`}
               </span>
               <span className="mt-0.5 block text-sm text-white/80">
-                Toque para ver e avisar o cliente
+                Toque para ver, avisar a retirada ou a venda
               </span>
             </span>
           </button>
