@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { shop } from '@/lib/shop'
+import logo from '@/assets/logo.png'
 
 export function PhoneFrame({ children }: { children: ReactNode }) {
   return (
@@ -15,7 +16,7 @@ export function PhoneFrame({ children }: { children: ReactNode }) {
 export function BrandMark({ compact = false }: { compact?: boolean }) {
   return (
     <img
-      src="/logo.png"
+      src={logo}
       alt={shop.name}
       className={compact ? 'h-9 w-auto max-w-[210px] object-contain' : 'h-11 w-auto max-w-[240px] object-contain'}
     />
