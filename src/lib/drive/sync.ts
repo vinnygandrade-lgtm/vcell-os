@@ -40,19 +40,15 @@ export type DriveUiStatus = {
   email: string
 }
 
-let syncing = false
-let running = false
-let queued = false
-let hooksRegistered = false
-let applying = false
-let initStarted = false
-let timer = 0
-
-function emit() {
-  for (const listener of listeners) listener()
+let snapshot: DriveUiStatus = {
+  connected: false,
+  syncing: false,
+  lastSyncAt: 0,
+  lastError: '',
+  email: '',
 }
 
-export function getDriveUiStatus(): DriveUiStatus {
+function readStatus(): DriveUiStatus {
   const cfg = loadDriveConfig()
   return {
     connected: cfg.connected,
@@ -62,6 +58,36 @@ export function getDriveUiStatus(): DriveUiStatus {
     email: cfg.email,
   }
 }
+
+function sameStatus(a: DriveUiStatus, b: DriveUiStatus) {
+  return (
+    a.connected === b.connected &&
+    a.syncing === b.syncing &&
+    a.lastSyncAt === b.lastSyncAt &&
+    a.lastError === b.lastError &&
+    a.email === b.email
+  )
+}
+
+function emit() {
+  const next = readStatus()
+  if (!sameStatus(snapshot, next)) snapshot = next
+  for (const listener of listeners) listener()
+}
+
+export function getDriveUiStatus(): DriveUiStatus {
+  const next = readStatus()
+  if (!sameStatus(snapshot, next)) snapshot = next
+  return snapshot
+}
+
+let syncing = false
+let running = false
+let queued = false
+let hooksRegistered = false
+let applying = false
+let initStarted = false
+let timer = 0
 
 export function subscribeDriveStatus(listener: Listener) {
   listeners.add(listener)
