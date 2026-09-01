@@ -36,7 +36,6 @@ export interface Photo {
   orderId: string
   blob: Blob
   createdAt: number
-  driveFileId?: string
 }
 
 export type TombstoneKind = 'customer' | 'order' | 'photo'

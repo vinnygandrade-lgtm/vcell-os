@@ -42,19 +42,6 @@ export function formatDateTime(ms: number) {
   }).format(ms)
 }
 
-export function formatAgo(ms: number) {
-  if (!ms) return ''
-  const min = Math.max(0, Math.round((Date.now() - ms) / 60000))
-  if (min < 1) return 'agora'
-  if (min === 1) return 'há 1 min'
-  if (min < 60) return `há ${min} min`
-  const hours = Math.round(min / 60)
-  if (hours === 1) return 'há 1 h'
-  if (hours < 24) return `há ${hours} h`
-  const days = Math.round(hours / 24)
-  return days === 1 ? 'há 1 dia' : `há ${days} dias`
-}
-
 export function formatDate(ms: number) {
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',

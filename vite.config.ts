@@ -22,7 +22,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,png,svg,ico,webmanifest}'],
         navigateFallback: 'index.html',
         navigateFallbackDenylist: [/^\/.*\.[^/]+$/],
-        cacheId: 'vcell-os-2',
+        cacheId: 'vcell-os-3',
       },
       manifest: {
         name: 'Vcell Assistência Técnica',
@@ -34,6 +34,7 @@ export default defineConfig({
         orientation: 'portrait',
         lang: 'pt-BR',
         start_url: './',
+        scope: './',
         icons: [
           {
             src: 'icon-192.png',

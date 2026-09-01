@@ -57,7 +57,7 @@ export function explainSaveError(err: unknown) {
     return 'O celular ficou sem espaço para as fotos. Tente com menos fotos, ou salve a OS e tire as fotos depois.'
   }
   if (/randomUUID|secure context|SecureContext/i.test(text)) {
-    return 'O Chrome bloqueou o salvamento neste endereço. Feche e abra o app de novo pelo mesmo link.'
+    return 'O Safari bloqueou o salvamento neste endereço. Feche e abra de novo pelo ícone na tela inicial.'
   }
   if (/DataError|ConstraintError/i.test(text)) {
     return 'Algum dado não deu para gravar. Confira o nome, o modelo e tente de novo.'

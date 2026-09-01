@@ -1,7 +1,5 @@
-import { useEffect } from 'react'
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { PhoneFrame } from '@/components/Shell'
-import { initCloud } from '@/lib/cloud'
 import { CustomerPage } from '@/pages/CustomerPage'
 import { CustomersPage } from '@/pages/CustomersPage'
 import { HomePage } from '@/pages/HomePage'
@@ -10,10 +8,6 @@ import { OrderPage } from '@/pages/OrderPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 
 export default function App() {
-  useEffect(() => {
-    initCloud()
-  }, [])
-
   return (
     <HashRouter>
       <PhoneFrame>
