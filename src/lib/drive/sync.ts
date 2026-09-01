@@ -339,16 +339,20 @@ export async function disconnectDrive() {
 }
 
 export function initDrive() {
-  registerDriveHooks()
-  if (initStarted) return
-  initStarted = true
-  if (isDriveConnected()) void syncNow()
-  window.addEventListener('online', () => {
-    if (isDriveConnected()) scheduleSync()
-  })
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && isDriveConnected()) scheduleSync()
-  })
+  try {
+    registerDriveHooks()
+    if (initStarted) return
+    initStarted = true
+    if (isDriveConnected()) void syncNow()
+    window.addEventListener('online', () => {
+      if (isDriveConnected()) scheduleSync()
+    })
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && isDriveConnected()) scheduleSync()
+    })
+  } catch (err) {
+    console.error(err)
+  }
 }
 
 export function registerDriveHooks() {

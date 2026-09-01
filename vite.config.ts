@@ -17,6 +17,13 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['logo.png', 'icon-192.png', 'icon-512.png'],
+      workbox: {
+        cleanupOutdatedCaches: true,
+        globPatterns: ['**/*.{js,css,html,png,svg,ico,webmanifest}'],
+        navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/.*\.[^/]+$/],
+        cacheId: 'vcell-os-2',
+      },
       manifest: {
         name: 'Vcell Assistência Técnica',
         short_name: 'Vcell',
