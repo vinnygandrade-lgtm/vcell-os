@@ -1,5 +1,5 @@
 import { db, uid } from './db'
-import { runQuietly, scheduleSync } from './drive'
+import { runQuietly, scheduleSync } from './cloud'
 import type { Customer, Order, Photo } from './types'
 
 interface BackupFile {

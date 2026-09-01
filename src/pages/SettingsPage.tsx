@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, Download, MapPin, Phone, Upload } from 'lucide-react'
 import { BrandMark } from '@/components/Shell'
 import { areaClass } from '@/components/Ui'
-import { DriveSettings } from '@/components/DriveSettings'
+import { CloudSettings } from '@/components/CloudSettings'
 import { exportBackup, importBackup } from '@/lib/backup'
 import {
   DEFAULT_TEMPLATES,
@@ -69,15 +69,14 @@ export function SettingsPage() {
           </div>
         </section>
 
-        <DriveSettings />
+        <CloudSettings />
 
         <section className="mt-4 rounded-3xl bg-panel p-4 ring-1 ring-line">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-mute">No celular</p>
           <p className="mt-2 text-sm leading-relaxed text-mute">
             No Chrome do celular, abra este endereço e depois toque em{' '}
             <strong className="text-paper">Adicionar à tela inicial</strong>. O app usa a câmera e
-            guarda os dados neste aparelho. Se o Drive estiver ligado, também manda uma cópia para a
-            sua conta Google.
+            guarda os dados neste aparelho. Se a nuvem estiver ligada, também manda uma cópia.
           </p>
           <p className="mt-3 break-all rounded-2xl bg-raised px-3 py-2 font-mono text-xs text-blue-200">
             {typeof window !== 'undefined' ? window.location.href.split('#')[0] : ''}
@@ -159,7 +158,7 @@ export function SettingsPage() {
         <section className="mt-4 rounded-3xl bg-panel p-4 ring-1 ring-line">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-mute">Backup</p>
           <p className="mt-2 text-sm leading-relaxed text-mute">
-            Os dados ficam neste celular. Com o Drive ligado, a nuvem já é o backup. Ainda assim
+            Os dados ficam neste celular. Com a nuvem ligada, a cópia já é o backup. Ainda assim
             pode exportar um arquivo se quiser.
           </p>
           <div className="mt-3 grid gap-2">

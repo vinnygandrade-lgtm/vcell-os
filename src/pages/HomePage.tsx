@@ -3,7 +3,7 @@ import { AlertTriangle, Clock, Cloud, Search, Settings, Smartphone, Users } from
 import { BrandMark } from '@/components/Shell'
 import { InstallBanner } from '@/components/InstallBanner'
 import { OrderCard } from '@/components/OrderCard'
-import { useDriveStatus } from '@/hooks/useDrive'
+import { useCloudStatus } from '@/hooks/useCloud'
 import { useCustomerMap, useFirstPhotos, useOrders } from '@/hooks/useStore'
 import { formatAgo, isDueSoon, isOverdue, matchesQuery, OVERDUE_DAYS } from '@/lib/format'
 import { useMemo, useState } from 'react'
@@ -62,7 +62,7 @@ export function HomePage() {
   const ready = orders.filter((o) => o.status === 'ready').length
   const overdue = orders.filter(isOverdue)
   const soon = orders.filter(isDueSoon)
-  const drive = useDriveStatus()
+  const cloud = useCloudStatus()
 
   return (
     <div className="flex min-h-dvh flex-col pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
@@ -124,24 +124,24 @@ export function HomePage() {
 
       <main className="flex flex-1 flex-col gap-3 px-4">
         <InstallBanner />
-        {drive.connected && (
+        {cloud.connected && (
           <Link
             to="/ajustes"
             className={`flex items-center gap-2 rounded-2xl px-3 py-2.5 text-sm ${
-              drive.lastError
+              cloud.lastError
                 ? 'bg-red/15 text-red-hot ring-1 ring-red/40'
                 : 'bg-raised text-mute ring-1 ring-line'
             }`}
           >
             <Cloud size={16} className="shrink-0" />
             <span className="min-w-0 truncate">
-              {drive.syncing
-                ? 'Enviando para o Drive…'
-                : drive.lastError
-                  ? drive.lastError
-                  : drive.lastSyncAt
-                    ? `Drive · copiado ${formatAgo(drive.lastSyncAt)}`
-                    : 'Drive ligado'}
+              {cloud.syncing
+                ? 'Enviando para a nuvem…'
+                : cloud.lastError
+                  ? cloud.lastError
+                  : cloud.lastSyncAt
+                    ? `Nuvem · copiado ${formatAgo(cloud.lastSyncAt)}`
+                    : 'Nuvem ligada'}
             </span>
           </Link>
         )}

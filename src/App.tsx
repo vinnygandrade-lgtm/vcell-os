@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { PhoneFrame } from '@/components/Shell'
-import { initDrive } from '@/lib/drive'
+import { initCloud } from '@/lib/cloud'
 import { CustomerPage } from '@/pages/CustomerPage'
 import { CustomersPage } from '@/pages/CustomersPage'
 import { HomePage } from '@/pages/HomePage'
@@ -11,7 +11,7 @@ import { SettingsPage } from '@/pages/SettingsPage'
 
 export default function App() {
   useEffect(() => {
-    initDrive()
+    initCloud()
   }, [])
 
   return (
